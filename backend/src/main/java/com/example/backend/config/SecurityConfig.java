@@ -7,7 +7,6 @@ import com.example.backend.service.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -15,7 +14,6 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -23,7 +21,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
@@ -99,35 +96,38 @@ public class SecurityConfig {
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
-//                .cors(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors
+                        .configurationSource(request -> {
+                            var corsConfiguration = new CorsConfiguration();
+                            corsConfiguration.setAllowedOrigins(Collections.singletonList("http://localhost:5173"));
+                            corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
+                            corsConfiguration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type", "Access-Control-Allow-Origin"));
+                            return corsConfiguration;
+                        }))
+//
+                .cors(AbstractHttpConfigurer::disable)
+
 //                .csrf(csrf -> csrf
 //                        .csrfTokenRepository().disable()
 //                        .ignoringRequestMatchers("/api/v1/auth/login", "/api/v1/auth/logout", "/api/v1/auth/register")
 //
 //
 //                )
-                .cors(cors -> cors
-                        .configurationSource(request -> {
-                            var corsConfiguration = new CorsConfiguration();
-                            corsConfiguration.setAllowedOrigins(Collections.singletonList("http://localhost:5173"));
-                            corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
-                            corsConfiguration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
-                            return corsConfiguration;
-                        }))
+
                 .authorizeHttpRequests(configure -> configure
 
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login",
-                                "/api/v1/auth/logout").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/posts/create-post").hasAnyAuthority("ROLE_ADMIN", "ROLE_USER")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/posts/all", "/api/v1/posts/{id}").permitAll()
-                        .requestMatchers(HttpMethod.GET,"/api/v1/users/all").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/comments/create-comment/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_USER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/comments/delete-comment/{id}")
-                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_MODERATOR")
+//                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login",
+//                                "/api/v1/auth/logout").permitAll()
+//                        .requestMatchers(HttpMethod.POST, "/api/v1/posts/create-post").hasAnyAuthority("ROLE_ADMIN", "ROLE_USER")
+//                        .requestMatchers(HttpMethod.GET, "/api/v1/posts/all", "/api/v1/posts/{id}","/api/v1/auth/login-google").permitAll()
+//                        .requestMatchers(HttpMethod.GET,"/api/v1/users/all").hasAuthority("ROLE_ADMIN")
+//                        .requestMatchers(HttpMethod.POST, "/api/v1/comments/create-comment/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_USER")
+//                        .requestMatchers(HttpMethod.DELETE, "/api/v1/comments/delete-comment/{id}")
+//                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_MODERATOR")
 
                         .anyRequest().authenticated()
                 )
-//                .oauth2Client(withDefaults())
+                .oauth2Client(withDefaults())
                 .sessionManagement(sessionManagement -> sessionManagement
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider(customUserDetailsService, passwordEncoder()))
@@ -137,17 +137,18 @@ public class SecurityConfig {
 
                 .httpBasic(withDefaults())
                 .formLogin(withDefaults());
-//                .logout(logout -> logout.logoutSuccessUrl("/"))
-//                .rememberMe(AbstractHttpConfigurer::disable)
-//                .headers(headers -> headers
-//                        .contentSecurityPolicy(csp -> csp
-//                                .policyDirectives("default-src 'self'"))
-//                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
-//                        .httpStrictTransportSecurity(HeadersConfigurer.HstsConfig::disable)
-//                );
-//                .headers(headers -> headers
-//                        // Other configurations...
-//                        .httpStrictTransportSecurity(HeadersConfigurer.HstsConfig::disable)
+//                .oauth2Login(
+//                        oauth2Login -> oauth2Login
+//                                .loginPage("/api/v1/auth/login-google")
+//                                .clientRegistrationRepository(clientRegistrationRepository())
+//                                .authorizationEndpoint(
+//                                        authorizationEndpointConfig -> authorizationEndpointConfig
+//                                                .baseUri("/oauth2/authorize-client")
+//                                ).redirectionEndpoint(
+//                                redirectionEndpointConfig -> redirectionEndpointConfig
+//                                        .baseUri("/login/oauth2/code/*"
+//                                )
+//                        )
 //                );
 
 
@@ -155,11 +156,6 @@ public class SecurityConfig {
     }
 
 
-    /**
-     * Configure the authentication entry point.
-     *
-     * @return The AuthenticationEntryPoint.
-     */
 
     @Bean
     public AuthenticationEntryPoint authenticationEntryPoint() {
@@ -168,5 +164,14 @@ public class SecurityConfig {
     }
 
 
+    // config for cors policy
+//    @Bean
+//    public CorsConfiguration corsConfiguration() {
+//        CorsConfiguration corsConfiguration = new CorsConfiguration();
+//        corsConfiguration.setAllowedOrigins(Collections.singletonList("http://localhost:5173"));
+//        corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
+//        corsConfiguration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type", "Access-Control-Allow-Origin"));
+//        return corsConfiguration;
+//    }
 }
 

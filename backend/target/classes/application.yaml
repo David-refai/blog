@@ -1,9 +1,24 @@
 
-
 spring:
+  security:
+      oauth2:
+        client:
+          registration:
+            google:
+              client-id: 81659017065-gm39pqb2lnem75vcrf8fmsupqv0n8t1h.apps.googleusercontent.com
+              client-secret: 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
+              scope:
+                - email
+                - profile
+#          provider:
+#            google:
+#              authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+#              token-uri: https://www.googleapis.com/oauth2/v4/token
+#              user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+#              user-name-attribute: sub
   datasource:
     # save the database in the backend folder
-    url:  jdbc:sqlite:../backend/database.db
+    url:  jdbc:sqlite:./backend/src/database/database.db
     driver-class-name: org.sqlite.JDBC
     username: root
     password: root
@@ -42,3 +57,14 @@ logging:
     org:
       springframework:
         security: trace
+        web: trace
+#    com:
+#        example:
+#            springboot: debug
+#    pattern:
+#      console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+#    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+
+
+

@@ -5,5 +5,4 @@ public record AuthenticationResponse(
         String jwt,
         UserDto user
 
-) {
-}
+){}

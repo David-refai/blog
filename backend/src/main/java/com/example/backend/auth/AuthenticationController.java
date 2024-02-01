@@ -7,14 +7,18 @@ import com.example.backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
 import org.springframework.web.bind.annotation.*;
 
 
 @RestController
 @RequestMapping("/api/v1/auth")
-@CrossOrigin(origins = "http://localhost:5173")
+//@CrossOrigin(origins = "http://localhost:5173")
 public class AuthenticationController {
 //
     private final UserService userService;
@@ -86,4 +90,21 @@ public class AuthenticationController {
         return ResponseEntity.ok().body("Logged out successfully");
     }
 
+//    ADD LOGIN WITH GOOGLE
+    @GetMapping("/login-google")
+    @PreAuthorize("permitAll")
+    public ResponseEntity<String> loginGoogle(@RegisteredOAuth2AuthorizedClient("google")OAuth2AuthorizedClient authorizedClient) {
+        try {
+            String token = authorizedClient.getAccessToken().getTokenValue();
+//        AuthenticationResponse response = new AuthenticationResponse(token, null);
+            System.out.println(authorizedClient.getAccessToken().getScopes());
+            System.out.println("token: " + token);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + token) // Ensure 'Bearer' prefix is added
+                    .body(token);
+        } catch (Exception e) {
+            // Handle any exceptions
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during login: " + e.getMessage());
+        }
+    }
 }
